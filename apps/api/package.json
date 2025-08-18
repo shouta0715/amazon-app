@@ -1,0 +1,25 @@
+{
+  "name": "api",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8000",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check": "pnpm check-types && pnpm lint && pnpm format"
+  },
+  "dependencies": {
+    "hono": "^4.9.0",
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@package/eslint-config": "workspace:*",
+    "@package/prettier-config": "workspace:*",
+    "@package/typescript-config": "workspace:*",
+    "eslint": "^9.33.0",
+    "typescript-eslint": "^8.39.0",
+    "wrangler": "^4.28.1"
+  }
+}

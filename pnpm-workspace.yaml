@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+
+nodeLinker: hoisted
+
+onlyBuiltDependencies:
+  - '@swc/core'
+  - '@tailwindcss/oxide'
+  - esbuild
+  - lefthook
+  - sharp
+  - unrs-resolver
+  - workerd

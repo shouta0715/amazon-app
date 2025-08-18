@@ -1,0 +1,36 @@
+pre-push:
+  parallel: true
+  commands:
+    to-next-lint:
+      root: apps/next/
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm eslint --fix {push_files}
+    to-react-lint:
+      root: "apps/react/"
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm eslint --fix {push_files}
+    to-api-lint:
+      root: "apps/api/"
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm eslint --fix {push_files}
+    to-native-lint:
+      root: "apps/native/"
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm eslint --fix {push_files}
+
+    to-next-format:
+      root: apps/next/
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm prettier --write --ignore-unknown {push_files}
+    to-react-format:
+      root: "apps/react/"
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm prettier --write --ignore-unknown {push_files}
+    to-api-format:
+      root: "apps/api/"
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm prettier --write --ignore-unknown {push_files}
+    to-native-format:
+      root: "apps/native/"
+      glob: "*.{js,jsx,ts,tsx}"
+      run: pnpm prettier --write --ignore-unknown {push_files}
