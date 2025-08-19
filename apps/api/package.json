@@ -2,22 +2,32 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 8000",
+    "db:dev": "docker compose up -d",
+    "db:down": "docker compose down",
+    "dev": "pnpm db:dev && wrangler dev --port 8000",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check": "pnpm check-types && pnpm lint && pnpm format"
+    "check": "pnpm check-types && pnpm lint && pnpm format",
+    "seed": "pnpx tsx src/scripts/image-product.ts",
+    "studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@hono/clerk-auth": "^3.0.3",
+    "@types/pg": "^8.15.5",
+    "drizzle-orm": "^0.43.1",
     "hono": "^4.9.0",
+    "pg": "^8.16.3",
+    "stripe": "^18.0.0",
     "valibot": "^1.1.0"
   },
   "devDependencies": {
     "@package/eslint-config": "workspace:*",
     "@package/prettier-config": "workspace:*",
     "@package/typescript-config": "workspace:*",
+    "drizzle-kit": "^0.31.1",
     "eslint": "^9.33.0",
     "typescript-eslint": "^8.39.0",
     "wrangler": "^4.28.1"
