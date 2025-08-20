@@ -1,0 +1,1 @@
+export const DATABASE_URL = "postgres://root:secret@localhost:5432/amazon";
