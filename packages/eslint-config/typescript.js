@@ -1,11 +1,12 @@
-import tseslint from "typescript-eslint";
+import { defineConfig } from "eslint/config";
 import eslint from "@eslint/js";
 import baseConfig from "./base.js";
 import unusedImports from "eslint-plugin-unused-imports";
 import importPlugin from "eslint-plugin-import";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
+import tseslint from "typescript-eslint";
 
-const config = tseslint.config(
+const config = defineConfig(
   ...baseConfig,
   {
     name: "typescript-logic",
