@@ -1,10 +1,10 @@
-import tseslint from "typescript-eslint";
+import { defineConfig } from "eslint/config";
 import tsConfig from "./typescript.js";
 import reactConfig from "./react.js";
 import nextPlugin from "@next/eslint-plugin-next";
 import eslintPluginN from "eslint-plugin-n";
 
-const config = tseslint.config(...tsConfig, ...reactConfig, {
+const config = defineConfig(...tsConfig, ...reactConfig, {
   name: "next",
   files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
   plugins: {

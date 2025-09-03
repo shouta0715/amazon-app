@@ -1,11 +1,11 @@
-import tseslint from "typescript-eslint";
+import { defineConfig } from "eslint/config";
 import tsConfig from "./typescript.js";
 import reactPlugin from "eslint-plugin-react";
 import globals from "globals";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 
-const config = tseslint.config(
+const config = defineConfig(
   ...tsConfig,
   {
     name: "react-settings",
