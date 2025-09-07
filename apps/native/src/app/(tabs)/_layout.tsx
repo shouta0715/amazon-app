@@ -1,10 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { CustomTabBar } from "@/components/navigation/custom-tab-bar";
 import { StyledTabs } from "@/components/navigation/tabs";
 
 function TabsLayout() {
   return (
-    <StyledTabs headerClassName="bg-dark">
+    <StyledTabs
+      headerClassName="bg-dark"
+      tabBar={(props) => <CustomTabBar {...props} />}
+    >
       <Tabs.Screen
         name="(index)"
         options={{
