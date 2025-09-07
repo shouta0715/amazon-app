@@ -6,10 +6,9 @@ function TabsLayout() {
   return (
     <StyledTabs headerClassName="bg-dark">
       <Tabs.Screen
-        name="index"
+        name="(index)"
         options={{
           headerShown: false,
-
           tabBarIcon: ({ color, size }) => (
             <Ionicons color={color} name="home-outline" size={size} />
           ),
