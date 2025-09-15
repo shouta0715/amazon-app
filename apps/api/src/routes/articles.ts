@@ -1,16 +1,18 @@
 import { vValidator } from "@hono/valibot-validator";
 import { eq } from "drizzle-orm";
-import { Hono } from "hono";
-import { db } from "@/db";
-import { articles } from "@/db/schema";
-import { createArticleSchema, updateArticleSchema } from "@/schemas/articles";
-import type { CloudflareBindings } from "@/types";
 
-const router = new Hono<{ Bindings: CloudflareBindings }>();
+import { factory } from "@/app";
+import { articles } from "@/db/schema";
+import { clerkAuthMiddleware, authMiddleware } from "@/middleware/auth";
+import { createArticleSchema, updateArticleSchema } from "@/schemas/articles";
+
+const app = factory.createApp();
+app.use(clerkAuthMiddleware);
+app.use(authMiddleware);
 
 // GET /articles - list all articles
-router.get("/", async (c) => {
-  const all = await db.select().from(articles);
+app.get("/", async (c) => {
+  const all = await c.var.db.select().from(articles);
   const host = c.req.header("host");
   const protocol = c.req.header("x-forwarded-proto") || "http";
   // Map imageUrl and glbUrl to R2 URLs if present
@@ -28,12 +30,15 @@ router.get("/", async (c) => {
 });
 
 // GET /articles/:id - get one article by id
-router.get("/:id", async (c) => {
+app.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (isNaN(id)) {
     return c.json({ error: "Invalid article id" }, 400);
   }
-  const [article] = await db.select().from(articles).where(eq(articles.id, id));
+  const [article] = await c.var.db
+    .select()
+    .from(articles)
+    .where(eq(articles.id, id));
   if (!article) {
     return c.json({ error: "Article not found" }, 404);
   }
@@ -54,13 +59,13 @@ router.get("/:id", async (c) => {
 });
 
 // PATCH /articles/:id - update article
-router.patch("/:id", vValidator("json", updateArticleSchema), async (c) => {
+app.patch("/:id", vValidator("json", updateArticleSchema), async (c) => {
   const id = Number(c.req.param("id"));
   if (isNaN(id)) {
     return c.json({ error: "Invalid article id" }, 400);
   }
   const { title, description, price, imageUrl, glbUrl } = c.req.valid("json");
-  const [updated] = await db
+  const [updated] = await c.var.db
     .update(articles)
     .set({ title, description, price, imageUrl, glbUrl })
     .where(eq(articles.id, id))
@@ -73,12 +78,12 @@ router.patch("/:id", vValidator("json", updateArticleSchema), async (c) => {
 });
 
 // DELETE /articles/:id - delete article
-router.delete("/:id", async (c) => {
+app.delete("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (isNaN(id)) {
     return c.json({ error: "Invalid article id" }, 400);
   }
-  const [deleted] = await db
+  const [deleted] = await c.var.db
     .delete(articles)
     .where(eq(articles.id, id))
     .returning();
@@ -90,10 +95,10 @@ router.delete("/:id", async (c) => {
 });
 
 // POST /articles - create new article
-router.post("/", vValidator("json", createArticleSchema), async (c) => {
+app.post("/", vValidator("json", createArticleSchema), async (c) => {
   const { title, description, price, imageUrl, glbUrl } = c.req.valid("json");
 
-  const [created] = await db
+  const [created] = await c.var.db
     .insert(articles)
     .values({ title, description, price, imageUrl, glbUrl })
     .returning();
@@ -102,7 +107,7 @@ router.post("/", vValidator("json", createArticleSchema), async (c) => {
 });
 
 // GET /articles/image/:imageUrl - serve an image by filename from R2
-router.get("/image/:imageUrl", async (c) => {
+app.get("/image/:imageUrl", async (c) => {
   const imageUrl = c.req.param("imageUrl");
   if (!imageUrl) {
     return c.json({ error: "Missing image filename" }, 400);
@@ -152,7 +157,7 @@ router.get("/image/:imageUrl", async (c) => {
 });
 
 // GET /articles/glb/:glbUrl - serve a glb file by filename from R2
-router.get("/glb/:glbUrl", async (c) => {
+app.get("/glb/:glbUrl", async (c) => {
   const glbUrl = c.req.param("glbUrl");
   if (!glbUrl) {
     return c.json({ error: "Missing glb filename" }, 400);
@@ -179,7 +184,7 @@ router.get("/glb/:glbUrl", async (c) => {
 });
 
 // POST /articles/upload - ファイルアップロード用エンドポイント
-router.post("/upload", async (c) => {
+app.post("/upload", async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get("file") as unknown as File;
@@ -223,4 +228,4 @@ router.post("/upload", async (c) => {
   }
 });
 
-export { router as articlesRouter };
+export { app as articlesApp };

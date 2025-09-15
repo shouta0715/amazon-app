@@ -1,14 +1,13 @@
 import { vValidator } from "@hono/valibot-validator";
-import { Hono } from "hono";
 import * as v from "valibot";
-import { db } from "@/db";
+import { factory } from "@/app";
 import { users } from "@/db/schema";
 import { clerkUserCreatedSchema } from "@/schemas/webhook";
 
-const router = new Hono();
+const app = factory.createApp();
 
 // POST /webhooks/clerk - handle Clerk user.created event
-router.post("/clerk", vValidator("json", clerkUserCreatedSchema), async (c) => {
+app.post("/clerk", vValidator("json", clerkUserCreatedSchema), async (c) => {
   const event = c.req.valid("json");
   try {
     // Clerk user.created webhook payload structure
@@ -22,7 +21,7 @@ router.post("/clerk", vValidator("json", clerkUserCreatedSchema), async (c) => {
         400,
       );
     }
-    await db.insert(users).values({ clerkUserId, email });
+    await c.var.db.insert(users).values({ clerkUserId, email });
 
     return c.json({ created: true }, 201);
   } catch (err) {
@@ -36,4 +35,4 @@ router.post("/clerk", vValidator("json", clerkUserCreatedSchema), async (c) => {
   }
 });
 
-export { router as webhooksRouter };
+export { app as webhooksApp };
