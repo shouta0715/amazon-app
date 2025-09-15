@@ -7,6 +7,7 @@ export const env = createEnv({
   server: {},
   client: {
     EXPO_PUBLIC_API_URL: v.string(),
+    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: v.string(),
   },
   runtimeEnv: process.env,
 });
