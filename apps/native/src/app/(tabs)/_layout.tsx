@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { CustomTabBar } from "@/components/navigation/custom-tab-bar";
 import { StyledTabs } from "@/components/navigation/tabs";
 
 function TabsLayout() {
+  const router = useRouter();
+
   return (
     <StyledTabs
       headerClassName="bg-dark"
@@ -45,12 +47,13 @@ function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="rufus"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons color={color} name="paw-outline" size={size} />
-          ),
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push("/(modal)/rufus");
+          },
         }}
+        name="rufus"
       />
     </StyledTabs>
   );
