@@ -1,11 +1,19 @@
 import fs from "fs";
 import path from "path";
-import { db } from "@/db";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as schema from "../db/schema";
 import { articles } from "@/db/schema";
 
 async function main() {
   const filePath = path.join("src/assets/products/dummy_items.json");
   const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  const db = drizzle(pool, { schema });
 
   for (const item of data) {
     await db.insert(articles).values({
