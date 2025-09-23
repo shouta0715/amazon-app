@@ -1,16 +1,15 @@
-import { Hono } from "hono";
-import { articlesRouter } from "./routes/articles";
-import { ordersRouter } from "./routes/orders";
-import { webhooksRouter } from "./routes/webhooks";
+import { factory } from "./app";
+import { articlesApp } from "./routes/articles";
+import { ordersApp } from "./routes/orders";
+import { webhooksApp } from "./routes/webhooks";
 
-const app = new Hono();
-// app.use("*", clerkMiddleware());
+const app = factory.createApp();
 
 // Health check
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-app.route("/articles", articlesRouter);
-app.route("/orders", ordersRouter);
-app.route("/webhooks", webhooksRouter);
+app.route("/articles", articlesApp);
+app.route("/orders", ordersApp);
+app.route("/webhooks", webhooksApp);
 
 export default app;

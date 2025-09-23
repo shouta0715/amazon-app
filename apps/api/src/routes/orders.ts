@@ -1,21 +1,23 @@
 import { getAuth } from "@hono/clerk-auth";
 import { vValidator } from "@hono/valibot-validator";
 import { eq, inArray } from "drizzle-orm";
-import { Hono } from "hono";
 import { env } from "hono/adapter";
 import Stripe from "stripe";
-import { db } from "../db";
 import { orders, orderItems, articles, users } from "../db/schema";
 import { Env } from "../types";
+import { factory } from "@/app";
+import { clerkAuthMiddleware, authMiddleware } from "@/middleware/auth";
 import {
   paymentSheetSchema,
   createOrderSchema,
   updateOrderSchema,
 } from "@/schemas/orders";
 
-const router = new Hono();
+const app = factory.createApp();
+app.use(clerkAuthMiddleware);
+app.use(authMiddleware);
 
-router.post(
+app.post(
   "/payment-sheet",
   vValidator("json", paymentSheetSchema),
   async (c) => {
@@ -51,7 +53,7 @@ router.post(
 );
 
 // GET /orders - list orders for authenticated user (with items)
-router.get("/", async (c) => {
+app.get("/", async (c) => {
   const auth = getAuth(c);
 
   if (!auth?.userId) {
@@ -59,7 +61,7 @@ router.get("/", async (c) => {
   }
 
   // 1. Find the internal user ID based on the Clerk user ID
-  const [user] = await db
+  const [user] = await c.var.db
     .select()
     .from(users)
     .where(eq(users.clerkUserId, auth.userId));
@@ -69,7 +71,7 @@ router.get("/", async (c) => {
   }
 
   // 2. Use the internal user ID to fetch orders
-  const userOrders = await db
+  const userOrders = await c.var.db
     .select()
     .from(orders)
     .where(eq(orders.userId, user.id));
@@ -77,7 +79,7 @@ router.get("/", async (c) => {
   const orderIds = userOrders.map((o) => o.id);
 
   let items = orderIds.length
-    ? await db
+    ? await c.var.db
         .select()
         .from(orderItems)
         .where(inArray(orderItems.orderId, orderIds))
@@ -87,7 +89,10 @@ router.get("/", async (c) => {
   const articleIds = items.map((i) => i.articleId);
   const articlesMap = articleIds.length
     ? (
-        await db.select().from(articles).where(inArray(articles.id, articleIds))
+        await c.var.db
+          .select()
+          .from(articles)
+          .where(inArray(articles.id, articleIds))
       ).reduce(
         (acc, article) => {
           acc[article.id] = article;
@@ -130,11 +135,11 @@ router.get("/", async (c) => {
 });
 
 // GET /orders/all - list all orders (admin, no auth for now)
-router.get("/all", async (c) => {
-  const allOrders = await db.select().from(orders);
+app.get("/all", async (c) => {
+  const allOrders = await c.var.db.select().from(orders);
   const orderIds = allOrders.map((o) => o.id);
   const items = orderIds.length
-    ? await db
+    ? await c.var.db
         .select()
         .from(orderItems)
         .where(inArray(orderItems.orderId, orderIds))
@@ -149,18 +154,21 @@ router.get("/all", async (c) => {
 });
 
 // GET /orders/:id - get a specific order by ID (no auth)
-router.get("/:id", async (c) => {
+app.get("/:id", async (c) => {
   const orderId = Number(c.req.param("id"));
   if (isNaN(orderId)) {
     return c.json({ error: "Invalid order id" }, 400);
   }
   // Fetch the order
-  const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+  const [order] = await c.var.db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, orderId));
   if (!order) {
     return c.json({ error: "Order not found" }, 404);
   }
   // Fetch items for this order
-  const items = await db
+  const items = await c.var.db
     .select()
     .from(orderItems)
     .where(eq(orderItems.orderId, orderId));
@@ -169,7 +177,10 @@ router.get("/:id", async (c) => {
   const articleIds = items.map((i) => i.articleId);
   const articlesMap = articleIds.length
     ? (
-        await db.select().from(articles).where(inArray(articles.id, articleIds))
+        await c.var.db
+          .select()
+          .from(articles)
+          .where(inArray(articles.id, articleIds))
       ).reduce(
         (acc, article) => {
           acc[article.id] = article;
@@ -207,7 +218,7 @@ router.get("/:id", async (c) => {
 });
 
 // POST /orders - create new order with items for authenticated user
-router.post("/", vValidator("json", createOrderSchema), async (c) => {
+app.post("/", vValidator("json", createOrderSchema), async (c) => {
   const auth = getAuth(c);
 
   if (!auth?.userId) {
@@ -215,7 +226,7 @@ router.post("/", vValidator("json", createOrderSchema), async (c) => {
   }
 
   // 1. Find the internal user ID based on the Clerk user ID
-  const [user] = await db
+  const [user] = await c.var.db
     .select()
     .from(users)
     .where(eq(users.clerkUserId, auth.userId));
@@ -227,7 +238,7 @@ router.post("/", vValidator("json", createOrderSchema), async (c) => {
   const { items } = c.req.valid("json");
 
   // Create order
-  const [order] = await db.insert(orders).values({ userId }).returning();
+  const [order] = await c.var.db.insert(orders).values({ userId }).returning();
 
   if (!order) {
     return c.json({ error: "Failed to create order" }, 500);
@@ -240,13 +251,13 @@ router.post("/", vValidator("json", createOrderSchema), async (c) => {
     quantity: item.quantity,
   }));
 
-  await db.insert(orderItems).values(orderItemsToInsert);
+  await c.var.db.insert(orderItems).values(orderItemsToInsert);
 
   return c.json({ ...order, items: orderItemsToInsert }, 201);
 });
 
 // PATCH /orders/:id - update order (e.g., items or status)
-router.patch("/:id", vValidator("json", updateOrderSchema), async (c) => {
+app.patch("/:id", vValidator("json", updateOrderSchema), async (c) => {
   const orderId = Number(c.req.param("id"));
   if (isNaN(orderId)) {
     return c.json({ error: "Invalid order id" }, 400);
@@ -254,21 +265,21 @@ router.patch("/:id", vValidator("json", updateOrderSchema), async (c) => {
   const { items } = c.req.valid("json");
 
   // Delete old items
-  await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+  await c.var.db.delete(orderItems).where(eq(orderItems.orderId, orderId));
   // Insert new items
   const orderItemsToInsert = items.map((item) => ({
     orderId,
     articleId: item.articleId,
     quantity: item.quantity,
   }));
-  await db.insert(orderItems).values(orderItemsToInsert);
+  await c.var.db.insert(orderItems).values(orderItemsToInsert);
 
   // Optionally update other order fields here
-  const updatedOrder = await db
+  const updatedOrder = await c.var.db
     .select()
     .from(orders)
     .where(eq(orders.id, orderId));
-  const updatedItems = await db
+  const updatedItems = await c.var.db
     .select()
     .from(orderItems)
     .where(eq(orderItems.orderId, orderId));
@@ -276,4 +287,4 @@ router.patch("/:id", vValidator("json", updateOrderSchema), async (c) => {
   return c.json({ ...updatedOrder[0], items: updatedItems });
 });
 
-export { router as ordersRouter };
+export { app as ordersApp };

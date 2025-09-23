@@ -5,8 +5,11 @@ packages:
 nodeLinker: hoisted
 
 onlyBuiltDependencies:
+  - '@clerk/shared'
   - '@swc/core'
   - '@tailwindcss/oxide'
+  - browser-tabs-lock
+  - core-js
   - esbuild
   - lefthook
   - sharp
